@@ -99,3 +99,111 @@ Prometheus.Graph = {
     };
   }
 };
+
+Prometheus.Graph.Gauge = function(args) {
+  if (!args.element) {
+    throw "Prometheus.Graph.Gauge needs a reference to an element";
+  }
+  if (!args.value) {
+    throw "Prometheus.Graph.Gauge needs a value";
+  }
+  if (!args.max) {
+    throw "Prometheus.Graph.Gauge needs a max";
+  }
+  var defaults = {
+    width:     args.element.clientWidth,
+    height:    args.element.clientHeight,
+    value:     args.value,
+    max:       args.max,
+    danger:    0.75,
+    warning:   0.50,
+    precision: 2,
+    bgColor:   "#666",
+    textColor: "#fff",
+  };
+
+  this.element = args.element;
+  this.svg = d3.select(this.element).append("svg");
+  this.width = args.width || defaults.width;
+  this.height = args.height || defaults.height;
+
+  this.value = args.value || defaults.value;
+  this.units = args.units;
+
+  this.max = args.max || defaults.max;
+  this.thickness = args.thickness || this.width/15;
+  this.precision = args.precision || this.precision;
+
+  this.danger = args.danger || defaults.danger;
+  this.warning = args.warning || defaults.warning;
+  this.bgColor = args.bgColor || defaults.bgColor;
+  this.textColor = args.textColor || defaults.textColor;
+};
+
+Prometheus.Graph.Gauge.prototype.render = function() {
+  var pi = Math.PI;
+  var translate = "translate(" + this.width/2 + "," + this.height + ")";
+  var start = -0.5 * pi;
+  var fullGaugeWidth = start + pi;
+  var percentage = this.value / this.max;
+  var end = (percentage * pi) - fullGaugeWidth;
+  if (this.value > this.max) {
+    end = fullGaugeWidth;
+  }
+
+  var d = this.width/2;
+  if (this.height < d) {
+    d = this.height;
+  }
+  var outerRadius = d;
+  var innerRadius = outerRadius - this.thickness;
+
+  // Gauge container.
+  var container = d3.svg.arc()
+                        .innerRadius(innerRadius)
+                        .outerRadius(outerRadius)
+                        .startAngle(start)
+                        .endAngle(fullGaugeWidth);
+
+  this.svg.attr("width", this.width)
+          .attr("height", this.height)
+          .append("path")
+          .attr("d", container)
+          .attr("fill", this.bgColor)
+          .attr("transform", translate);
+
+  // The current value of the gauge.
+  var arc = d3.svg.arc()
+                  .innerRadius(innerRadius)
+                  .outerRadius(outerRadius)
+                  .startAngle(start)
+                  .endAngle(end);
+
+  this.svg.attr("width", this.width)
+          .attr("height", this.height)
+          .append("path")
+          .attr("d", arc)
+          .attr("fill", function(d) {
+            if (percentage > this.danger) {
+              return "red";
+            } else if (percentage > this.warning) {
+              return "yellow";
+            }
+            return "green";
+          }.bind(this))
+          .attr("transform", translate);
+
+  // The label for the gauge.
+  this.svg.selectAll("text")
+          .data([{value: this.value, units: this.units}])
+          .enter()
+          .append("text")
+          .attr("x", this.width/2)
+          .style("text-anchor", "middle")
+          .attr("y", this.height*0.95)
+          .text(function(d) {
+            return d.value.toFixed(this.precision) + " " + (d.units || "");
+          }.bind(this))
+          .attr("font-size", this.width/20 + "px")
+          .attr("fill", this.textColor);
+};

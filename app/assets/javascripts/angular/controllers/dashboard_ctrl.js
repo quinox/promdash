@@ -164,6 +164,25 @@ angular.module("Prometheus.controllers")
     $scope.widgets.push(pie);
   };
 
+  $scope.addGauge = function() {
+    var gauge = {
+      title: "Title",
+      expression: {
+        id: 0,
+        serverID: 1,
+        expression: "",
+        legendID: 1
+      },
+      danger: 66,
+      warning: 33,
+      max: 3000,
+      refresh: 1,
+      precision: 3,
+      type: "gauge"
+    };
+    $scope.widgets.push(gauge);
+  };
+
   $scope.$watch('vars', function() {
     var vars = {};
     for (var i = 0; i < $scope.vars.length; i++) {

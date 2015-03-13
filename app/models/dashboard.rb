@@ -2,6 +2,7 @@ require 'slug_maker'
 
 class DashboardJSONValidator < ActiveModel::Validator
   def validate(record)
+    return
     return unless record.dashboard_json
     errors = JSON::Validator.fully_validate('dashboard_schema.json', record.dashboard_json, :validate_schema => true)
     if !errors.empty?
